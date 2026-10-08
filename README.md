@@ -414,7 +414,7 @@ Kept: `~/.config/claude-burst` (config, state, metrics, logs, backups; unless `-
 
 ## Contributing and tests
 
-`go test ./... -race` and `go vet ./...` run on every push. How to build, test and send changes, and the style rules, are in [CONTRIBUTING.md](CONTRIBUTING.md). Design notes, decisions and past investigations are under [docs/](docs/): [design proposals](docs/design/), [decisions](docs/decisions/) and [history](docs/history/).
+`go test ./... -race` and `go vet ./...` run on every push, on macOS and on Linux (tests that need macOS tools skip there and say why), and the code is also built for Windows. How to build, test and send changes, and the style rules, are in [CONTRIBUTING.md](CONTRIBUTING.md). Design notes, decisions and past investigations are under [docs/](docs/): [design proposals](docs/design/), [decisions](docs/decisions/) and [history](docs/history/).
 
 ## Terms and design notes
 

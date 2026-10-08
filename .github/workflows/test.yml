@@ -9,17 +9,29 @@ permissions:
   contents: read
 
 jobs:
+  # Burst runs on macOS only; Linux runs the same vet and tests so code that
+  # does not depend on the Mac stays portable. Tests that need macOS tools
+  # skip themselves elsewhere and say why.
   test:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"
+      # The script tests run zsh scripts, as on a Mac.
+      - name: zsh for the script tests
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y zsh
       # TestDashboardRunsInABrowser drives admin.html in headless Chromium.
       # Playwright lives outside the repo; the test finds it through
       # CLAUDE_BURST_PLAYWRIGHT and skips when it is absent.
       - name: Playwright for the dashboard smoke test
+        if: runner.os == 'macOS'
         run: |
           mkdir -p "$RUNNER_TEMP/pw"
           cd "$RUNNER_TEMP/pw"
@@ -33,14 +45,17 @@ jobs:
       - name: coverage summary
         run: |
           {
-            echo '### Coverage'
+            echo "### Coverage (${{ runner.os }})"
             echo '```'
             go tool cover -func=coverage.out | tail -1
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+      # The checks below read files, not the machine, so they run once, on
+      # macOS.
       # 22 of the scripts are zsh, which shellcheck cannot parse, so they get
       # zsh's own parser; the bash ones get bash -n.
       - name: shell syntax
+        if: runner.os == 'macOS'
         run: |
           for f in install.sh scripts/*.sh scripts/ci/*.sh; do
             case "$(head -1 "$f")" in
@@ -49,6 +64,20 @@ jobs:
             esac
           done
       - name: dashboard JavaScript parses
+        if: runner.os == 'macOS'
         run: zsh scripts/ci/check-admin-js.sh
       - name: documentation links resolve
+        if: runner.os == 'macOS'
         run: python3 scripts/ci/check-doc-links.py
+
+  # Not a port: a compile check, so a Unix-only call outside a _unix.go file
+  # is caught here rather than by whoever tries Windows next.
+  windows-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+      - name: go build for Windows
+        run: GOOS=windows go build ./...
