@@ -1,0 +1,16 @@
+// Package touchid gates an action behind the macOS device-owner
+// authentication sheet -- Touch ID, falling back to the login password.
+//
+// It exists for the admin UI's actions that hand a stored secret back in the
+// clear or send it somewhere new. The gateway calls AuthenticateIsolated
+// (isolated.go), which runs Authenticate in a child process. The gateway's OWN read of that
+// key, on the failover path, must never come through here -- failover
+// happens while nobody is watching, and a prompt there would turn a
+// credential into a request for a fingerprint at 3am and then fail.
+package touchid
+
+// timeoutSeconds bounds how long the sheet may sit unanswered. It is longer
+// than a normal fingerprint touch because the fallback path is typing a
+// login password, and shorter than any client timeout so the caller sees a
+// real answer rather than a dropped connection.
+const timeoutSeconds = 60

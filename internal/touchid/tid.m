@@ -1,3 +1,5 @@
+//go:build darwin && cgo
+
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <dispatch/dispatch.h>
 #include <stdlib.h>
