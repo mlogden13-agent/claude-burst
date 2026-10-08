@@ -40,7 +40,6 @@ package coord
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -50,7 +49,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/andrewbakercloudscale/claude-burst/internal/rotate"
@@ -217,16 +215,16 @@ func (c *Coordinator) with(fn func(t *tx) error) error {
 	gitc := c.prewarm()
 	deadline := time.Now().Add(lockWait)
 	for {
-		err := syscall.Flock(int(lf.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+		err := tryLockExclusive(lf)
 		if err == nil {
 			break
 		}
-		if !errors.Is(err, syscall.EWOULDBLOCK) || time.Now().After(deadline) {
+		if !lockBusy(err) || time.Now().After(deadline) {
 			return fmt.Errorf("state lock: %w", err)
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	defer syscall.Flock(int(lf.Fd()), syscall.LOCK_UN)
+	defer unlock(lf)
 	held := time.Now()
 	defer func() {
 		// Say so when the lock was held long enough to make others wait:

@@ -30,7 +30,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/andrewbakercloudscale/claude-burst/internal/autocompact"
@@ -573,7 +572,7 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 // which the gateway's drain handler (cmd/claude-burst/drain.go) answers by
 // exiting once nothing is streaming, at most 50s later. A variable so tests
 // can see it called without stopping the test binary.
-var restartSelf = func() error { return syscall.Kill(os.Getpid(), syscall.SIGTERM) }
+var restartSelf = terminateSelf
 
 // handleRestart stops the process after its in-flight replies finish.
 // launchd's KeepAlive brings it straight back with the current config, which

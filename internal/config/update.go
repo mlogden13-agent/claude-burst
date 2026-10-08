@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"syscall"
 )
 
 // Update is the ONE way to change config.json: load, modify, save under a
@@ -83,18 +82,12 @@ func lockConfigFile() (func(), error) {
 	if err != nil {
 		return nil, err
 	}
-	for {
-		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
-		if err != syscall.EINTR {
-			break
-		}
-	}
-	if err != nil {
+	if err := lockExclusive(f); err != nil {
 		f.Close()
 		return nil, err
 	}
 	return func() {
-		_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+		unlock(f)
 		f.Close()
 	}, nil
 }

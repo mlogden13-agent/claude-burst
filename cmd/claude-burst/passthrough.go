@@ -165,7 +165,7 @@ func startPassthrough(cfg config.Config, listen, target string, idle time.Durati
 	cmd.Stdout, cmd.Stderr = logf, logf
 	// Its own session: no SIGHUP when the terminal or Revert window closes,
 	// and outside the gateway's process group, which launchd kills on bootout.
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	cmd.SysProcAttr = newSessionAttr()
 	if err := cmd.Start(); err != nil {
 		return false, "", err
 	}
@@ -213,7 +213,7 @@ func stopPassthrough(logger *log.Logger) {
 	if pid == 0 {
 		return
 	}
-	_ = syscall.Kill(pid, syscall.SIGTERM)
+	_ = signalProcess(pid, syscall.SIGTERM)
 	p, _ := passthroughPidPath()
 	for i := 0; i < 50; i++ {
 		if _, err := os.Stat(p + ".listening"); errors.Is(err, os.ErrNotExist) {

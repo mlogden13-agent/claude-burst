@@ -84,14 +84,14 @@ var listHolders = func(addr string) []portHolder {
 // stopHolder sends SIGTERM, then SIGKILL after five seconds; a variable for
 // tests.
 var stopHolder = func(pid int) {
-	_ = syscall.Kill(pid, syscall.SIGTERM)
+	_ = signalProcess(pid, syscall.SIGTERM)
 	for i := 0; i < 50; i++ {
-		if syscall.Kill(pid, 0) != nil {
+		if signalProcess(pid, 0) != nil {
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	_ = syscall.Kill(pid, syscall.SIGKILL)
+	_ = signalProcess(pid, syscall.SIGKILL)
 }
 
 // claimPort waits for addr's port to be free, stopping a Burst pass-through
