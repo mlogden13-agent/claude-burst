@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -34,6 +35,9 @@ func runUnroute(t *testing.T, content *string) (string, int, string) {
 }
 
 func TestCodexUnrouteRemovesOnlyBurstsBlock(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("codex-unroute.sh edits with BSD sed -i '', which GNU sed reads as a file name")
+	}
 	user := "notify = 1\n\n[desktop]\nx = 1\n"
 	in := "# BEGIN claude-burst (Codex)\nmodel_provider = \"claude-burst\"\nmodel_providers.claude-burst = { name = \"Claude Burst\" }\n# END claude-burst\n" + user
 	got, code, out := runUnroute(t, &in)

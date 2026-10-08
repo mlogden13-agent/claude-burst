@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -13,6 +14,9 @@ import (
 // launchctl, curl, osascript and kill are stubs: nothing here reaches the
 // real gateway (a temporary HOME does not stop launchctl or kill).
 func TestSelfHealKillsAHungGateway(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("self-heal-watchdog.sh dates its marker files with BSD stat -f %m")
+	}
 	home := t.TempDir()
 	bin := filepath.Join(home, "bin")
 	if err := os.MkdirAll(filepath.Join(home, ".config", "claude-burst"), 0o700); err != nil {
@@ -111,6 +115,9 @@ func readFile(path string) string { b, _ := os.ReadFile(path); return string(b) 
 // check. The watchdog now counts the new pids and says so at the limit,
 // once, in the log, a notification and the audit trail.
 func TestSelfHealEscalatesACrashLoop(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("self-heal-watchdog.sh dates its marker files with BSD stat -f %m")
+	}
 	home, run := watchdogHome(t)
 	cfg := filepath.Join(home, ".config", "claude-burst")
 	pid := func(p string) {
@@ -171,6 +178,9 @@ func TestSelfHealEscalatesACrashLoop(t *testing.T) {
 // developer's Mac. Those are not crashes, whether the watchdog runs while
 // the marker is there or after the gateway replaced it with its .done.
 func TestSelfHealDoesNotCountPlannedRestarts(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("self-heal-watchdog.sh dates its marker files with BSD stat -f %m")
+	}
 	home, run := watchdogHome(t)
 	cfg := filepath.Join(home, ".config", "claude-burst")
 	for i, marker := range []string{"planned-restart", "planned-restart.done", "planned-restart", "planned-restart.done", "planned-restart", "planned-restart.done", "planned-restart"} {

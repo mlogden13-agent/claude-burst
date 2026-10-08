@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -25,6 +26,9 @@ func desired(t *testing.T, dir, lid string) string {
 // The idle window: awake with the lid shut for IDLE minutes after the lid
 // was last open or Claude Code was last used, then normal sleep.
 func TestIdleWindow(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("lid-awake-root.sh dates its state files with BSD stat -f %m")
+	}
 	dir := t.TempDir()
 	lidopen := filepath.Join(dir, "lid-awake.lidopen")
 	if got := desired(t, dir, "shut"); got != "1" {

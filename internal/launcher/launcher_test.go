@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -23,6 +24,9 @@ func stub(t *testing.T) (registered, opened *[]string) {
 }
 
 func TestInstallWritesAnAppThatRunsOpen(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("Info.plist is checked with /usr/bin/plutil, which only macOS has")
+	}
 	registered, _ := stub(t)
 	home := t.TempDir()
 	// A stand-in claude-burst that records how it was called.
