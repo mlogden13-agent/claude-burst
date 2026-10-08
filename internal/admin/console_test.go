@@ -23,7 +23,10 @@ func newTestConsole(t *testing.T) (*Console, *[]string, *string) {
 	dir, _ := config.ConfigDir()
 	os.MkdirAll(dir, 0o700)
 	notice.SetDefault(notice.New(notice.Path(dir), nil))
-	t.Cleanup(func() { notice.SetDefault(nil) })
+	// Every console action is audited by the notice writer goroutine, which
+	// can still be writing when the test returns: flush before the temporary
+	// HOME is removed, or its cleanup fails on a directory not yet empty.
+	t.Cleanup(func() { notice.Flush(2 * time.Second); notice.SetDefault(nil) })
 	var ran []string
 	var opened string
 	c := &Console{
