@@ -25,6 +25,20 @@ func readHandoff(t *testing.T, s *Server, sid string) (*Handoff, bool) {
 	return &h, true
 }
 
+// readyConversations counts the conversations of sid that have a summary
+// made or on its way: compactionReady for one conversation among several.
+func readyConversations(s *Server, sid string) int {
+	s.compaction.mu.Lock()
+	defer s.compaction.mu.Unlock()
+	n := 0
+	for k, st := range s.compaction.sessions {
+		if strings.HasPrefix(k, sid+"|") && (st.summary != "" || st.next != "") {
+			n++
+		}
+	}
+	return n
+}
+
 // A summary in force is written where the mod can read it with the gateway
 // down, naming the first message kept, and the file goes when the summary
 // does: a dropped summary must never be handed to Claude Code.
@@ -170,8 +184,12 @@ func TestASummaryClaudeCodeTookInIsNoLongerOnOffer(t *testing.T) {
  {"role":"assistant","content":[{"type":"text","text":"done with fourth"}]},
  {"role":"user","content":[{"type":"text","text":"fifth task, which is to read the whole file and say what it does"}]}
 ]`)...)
+	// compactionReady("S") is true already, for the old conversation, so
+	// wait for a summary of this one: a request sent before it is ready
+	// does not apply it. On Linux the summary often lost that race.
+	ready := readyConversations(s, "S")
 	send(t, s, "S", taken)
-	waitFor(t, func() bool { return s.compactionReady("S") })
+	waitFor(t, func() bool { return readyConversations(s, "S") > ready })
 	taken = append(taken, msgs(t, `[
  {"role":"assistant","content":[{"type":"text","text":"done with fifth, the file sets the gateway up and starts it"}]},
  {"role":"user","content":[{"type":"text","text":"sixth task"}]}
